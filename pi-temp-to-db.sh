@@ -13,3 +13,14 @@ CPU=$cpuTemp1"."$cpuTempM
 GPU=$(/opt/vc/bin/vcgencmd measure_temp | tr -cd '0-9.')
 
 curl -i -XPOST 'http://localhost:8086/write?db=envirostation&u=USERNAME&p=PASSWORD' --data-binary 'pitemperature,location=southdarenth CPU='$CPU',GPU='$GPU''
+
+#------------------END OF FILE------------------------------
+
+
+#------------------------------------------------------- set script to execute once per minuite---------------
+# crotab -e   // Open in nano & enter
+
+
+*/1 * * * * /home/pi/pi-temp-to-db.sh
+
+# spaces needed between * *
