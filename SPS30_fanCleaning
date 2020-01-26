@@ -1,0 +1,65 @@
+
+
+
+
+
+
+void autoClean() {
+
+
+  if (performCleanNow) {
+   
+    if (sps30.clean() == true) {                                     
+
+      Serial.println(F("fan-cleaning manually started"));
+      
+      delay(15000);                                                                // 10 second delay while fan cleaning takes place
+      
+      Serial.println(F("fan-cleaning Finished"));
+      performCleanNow = false;
+
+    } else {
+
+      Serial.println(F("Could NOT manually start fan-cleaning"));
+
+    }
+
+  }
+
+}
+
+
+
+
+
+
+/*
+ * 
+ *
+ *
+ *
+ *
+ *  Suggest saving a byte into eeprom every 4 hours, with address n+1,
+ *  
+ *  total EEPROM/FLASH addresses = 512:
+ *  Save number from 0 to 255 in each:
+ *  
+ *  
+ *  when eeprom reads byte 42, 84, 126, 164, 210, 252, 294, 336, 378, 420, 462, 508  == 1  autoclean is triggered. 
+ *  
+ *  if n > 508  n=0
+ *  
+ *  Save this intoinflux db for record keeping
+ * 
+ * 
+ * 
+ */
+
+
+void trackClean(){
+
+
+
+
+  
+}
