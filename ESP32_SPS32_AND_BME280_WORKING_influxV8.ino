@@ -153,6 +153,9 @@
 ///////////////////////////////////////////////////// INFLUX DB MODS////////////////////////////////////
 #define INFLUXDB_HOST "192.168.43.14"  // Typical Phone IP
 //#define INFLUXDB_HOST "192.168.1.143"     // typical hme network ip
+//#define INFLUXDB_HOST "192.168.1.51"     // Static IP now Set?
+//#define INFLUXDB_HOST "pangalactic.zapto.org:8086"
+#define INFLUXDB_HOST "86.184.225.76"     // Set to Static IP
 
 
 #define INFLUXDB_USER "admin"
@@ -169,7 +172,7 @@
 #define ELMO_SSID "Elmo XI"
 #define ELMO_PASS "Hotbox321"
 
-bool wifiHome = false;  // if true uses Home Network // if false uses ELMO Network credentials
+bool wifiHome = true;  // if true uses Home Network // if false uses ELMO Network credentials
 
 WiFiClient client;
 //MHZ19 myMHZ19;        // no CO2 Sensory
