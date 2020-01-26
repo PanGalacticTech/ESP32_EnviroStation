@@ -146,12 +146,18 @@
 
 #include "sps30.h"
 #include "SparkFunBME280.h"
-#include "InfluxDb.h"     
+#include "InfluxDb.h"
+
+// include library to read and write from flash memory
+#include <EEPROM.h>
+
+// define the number of bytes you want to access
+#define EEPROM_SIZE 1
 
 
 
 ///////////////////////////////////////////////////// INFLUX DB MODS////////////////////////////////////
-#define INFLUXDB_HOST "192.168.43.14"  // Typical Phone IP
+//#define INFLUXDB_HOST "192.168.43.14"  // Typical Phone IP
 //#define INFLUXDB_HOST "192.168.1.143"     // typical hme network ip
 //#define INFLUXDB_HOST "192.168.1.51"     // Static IP now Set?
 //#define INFLUXDB_HOST "pangalactic.zapto.org:8086"
@@ -320,10 +326,15 @@ int acc =  0;  // used to trigger reprinting of header on serial output
 
 byte loopNumber = 0;  // simple loopcounter to count loops to ensure not going mad
 
+
+bool performCleanNow = false;
+
+
+
 void setup() {
 
   Serial.begin(115200);
-
+  EEPROM.begin(EEPROM_SIZE);
 
 
   ///////////////////////////// Added From Envirostation //////////////////////////
@@ -337,11 +348,11 @@ void setup() {
   /////////////////////////////////////////////////////////////////////////////////////////
   delay(2000);  // delay for power issue during wifi startup // decoupling cap added to board as well.
 
-if (wifiHome){
-  WiFi.begin(WIFI_SSID, WIFI_PASS);    // still needs function for IP address change
-} else {
-   WiFi.begin(ELMO_SSID, ELMO_PASS);
-}
+  if (wifiHome) {
+    WiFi.begin(WIFI_SSID, WIFI_PASS);    // still needs function for IP address change
+  } else {
+    WiFi.begin(ELMO_SSID, ELMO_PASS);
+  }
 
   delay(1000);
 
@@ -419,6 +430,15 @@ if (wifiHome){
       Serial.println(F(" !!! Due to I2C buffersize only the SPS30 MASS concentration is available !!! \n"));
   }
 
+
+
+  recallInterval();    // recall amount of hours passed since last autoclean incase of shutdown
+  // if clean now requested
+  autoClean();
+
+
+
+
   //////////////////////////////////////////// Added from Envirostation/////////////////////////////
 
   //  humd = myHumidity.readHumidity();
@@ -434,7 +454,7 @@ if (wifiHome){
   last_temp = temp;
 
 
-  
+
 
   //////////////////////////////////////////// Added from Envirostation/////////////////////////////
 
@@ -450,9 +470,13 @@ void loop() {
 
   // tessting to see where program is hanging up
   Serial.println("Loop Still Running...");
-   Serial.print("Loop: "); 
-    Serial.print(loopNumber); 
-    loopNumber++;
+  Serial.print("Loop: ");
+  Serial.println(loopNumber);
+  loopNumber++;
+
+
+  saveInterval();   // saves a byte every hour to track hours between fan autocleans. Triggers autoclean if alloted time has passed.
+  autoClean();   // triggers autoclean if performCleanNow is true
 }
 
 
@@ -498,6 +522,13 @@ void GetDeviceInfo()
   else
     ErrtoMess("could not get Article code .", ret);
 }
+
+
+
+
+
+
+
 
 /**
    @brief : read and display all values
@@ -586,7 +617,7 @@ bool read_all()
   Serial.print(val.PartSize);
 
   PM25value = val.MassPM2;   // added lines here
-  PM10value =val.MassPM10;   // added lines here
+  PM10value = val.MassPM10;  // added lines here
 
   if (detect_BME280) {
     Serial.print(F("\t  "));
@@ -685,16 +716,16 @@ void postData()
   //  influx.write(row3);
 
   //Test Line
- // Serial.print("PM2.5value: ");
-//   Serial.print(PM25value);
+  // Serial.print("PM2.5value: ");
+  //   Serial.print(PM25value);
 
   InfluxData row4("PM10");
   row4.addTag("location", "southdarenth");
   row4.addValue("value", PM10value);
   //  influx.write(row4);
   //Test Line
- // Serial.print("PM10value: ");
- //  Serial.print(PM10value);
+  // Serial.print("PM10value: ");
+  //  Serial.print(PM10value);
 
   influx.prepare(row);
   influx.prepare(row2);
@@ -705,9 +736,9 @@ void postData()
 
   influx.write();
 
- Serial.println("POSTED");
- 
-//  client.stop(); // ?!?!?! fuck knows
+  Serial.println("POSTED");
+
+  //  client.stop(); // ?!?!?! fuck knows
 
 
 }
