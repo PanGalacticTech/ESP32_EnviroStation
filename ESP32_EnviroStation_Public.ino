@@ -157,26 +157,23 @@
 
 
 ///////////////////////////////////////////////////// INFLUX DB MODS////////////////////////////////////
-//#define INFLUXDB_HOST "192.168.43.14"  // Typical Phone IP
-//#define INFLUXDB_HOST "192.168.1.143"     // typical hme network ip
-//#define INFLUXDB_HOST "192.168.1.51"     // Static IP now Set?
-//#define INFLUXDB_HOST "pangalactic.zapto.org:8086"
-#define INFLUXDB_HOST "86.184.225.76"     // Set to Static IP
+
+define INFLUXDB_HOST "XXX.XXX.XXX.XXX"     // Set to Static IP of DataBase Server
 
 
-#define INFLUXDB_USER "admin"
-#define INFLUXDB_PASS "chunky"
+#define INFLUXDB_USER "admin"      // default change to match your influx db install
+#define INFLUXDB_PASS "admin"
 
 //#define WIFI_SSID "SSID"
 //#define WIFI_PASS "WIFI"
 
 // Home Network
-#define WIFI_SSID "BT-CPA2TT"
-#define WIFI_PASS "xGtTfU3gCd6bEV"
+#define WIFI_SSID "SSID"       // provide your network credentials
+#define WIFI_PASS "PASSWORD"
 
 // Phone Hotspot
-#define ELMO_SSID "Elmo XI"
-#define ELMO_PASS "Hotbox321"
+#define ELMO_SSID ""            // alt values could be used as backup
+#define ELMO_PASS ""
 
 bool wifiHome = true;  // if true uses Home Network // if false uses ELMO Network credentials
 
@@ -186,24 +183,36 @@ WiFiClient client;
 
 unsigned long getDataTimer = 0;
 
+// ########################## Sensor Values to Send to Influx ##########
+//~~~~~~~~~~~~~~~~~~~~~~~~~~SPS30~~~~~~~~~~~~~~~
 float PM25value = 0;
 float PM10value = 0;
 float  PM25num = 0;
 float  PM10num = 0;
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~BME280~~~~~~~~~~~~~~~~~~~~~~~
+float pressure = 0;
+float humd;
+float temp;
+
+
+float tempOffset = 2.50;   // Fudge value for temp offset. More testing to find a better solution or closer offset. Probably between 2.00 and 3.00 for now
+
+
 bool notFirstTime = false;
 bool firstTime = true;
+
 int CO2;   // Buffer for CO2
 int flipData = 0;
-float humd;
+
 float last_humd;
-float temp;
 float last_temp;
 
 Influxdb influx(INFLUXDB_HOST);
 
 /////////////////////////////////////////////// Wifi Copied in from working Sketch /////////////////////////////
 
-
+/// Depreciated Section but might be useful later.
 //boolean setAccessPoint = false;    // if true set up as Access Point
 
 //boolean setLocalNetwork = true;     // if true set up as Local Network Station
@@ -212,15 +221,14 @@ Influxdb influx(INFLUXDB_HOST);
 
 
 // Replace with your network credentials for Local Network
-const char* Localssid     = "BT-CPA2TT";  //Wifi Name  - SSID
-const char* Localpassword = "xGtTfU3gCd6bEV"; //Router Password - PASSWORD
+const char* Localssid     = "SSID";  //Wifi Name  - SSID
+const char* Localpassword = "PASS"; //Router Password - PASSWORD
 
+// These credentials are used if ESP32 set up as an access point
 const char* APssid     = "ESP32-wifi-dev";              //Wifi Name  - SSID
 const char* APpassword = "12345678";                  //Router Password - PASSWORD       // Minimum 8 Characters
 
-//WiFiUDP udp;    // disabled line to use ESP board on local network
-
-
+//WiFiUDP udp;    // disabled line to use ESP board on local networ
 
 
 /*
@@ -244,6 +252,8 @@ const char* APpassword = "12345678";                  //Router Password - PASSWO
 
 // Set web server port number to 80
 //WiFiServer server(80);
+/////////////////////////////////////////END OF DEPRECIATED VALUES//////////////////////////////////////////
+
 
 
 ////////////////////////////////////////////////////////////////////////SPS & BME ORIGONAL STUFF//////////////////////////////////////
@@ -620,23 +630,42 @@ bool read_all()
   PM10value = val.MassPM10;  // added lines here
 
   if (detect_BME280) {
-    Serial.print(F("\t  "));
-    Serial.print(mySensor.readFloatPressure() / 100, 0);
+    
+     Serial.print(F("\t  "));
+    pressure = (mySensor.readFloatPressure() / 100); //  I dont know why this is divided by 100 but okay
+               //   Serial.print(mySensor.readFloatPressure() / 100, 0);
+               Serial.print(pressure, 0);   // (value, no of .Points);
+
     Serial.print(F("\t   "));
-    Serial.print(mySensor.readFloatHumidity(), 1);
+
+    humd =  mySensor.readFloatHumidity() ;
+    //   Serial.print(mySensor.readFloatHumidity(), 1);
+    Serial.print(humd, 1);
+
     Serial.print(F("\t     "));
+
 
     if (BME_HIGHT) Serial.print(mySensor.readFloatAltitudeMeters(), 1);
     else Serial.print(mySensor.readFloatAltitudeFeet(), 1);
     Serial.print(F("\t"));
 
-    if (TEMP_TYPE)  Serial.print(mySensor.readTempC(), 2);
+
+    temp = (mySensor.readTempC()- tempOffset);   // offset value a fudge for now
+
+    //   if (TEMP_TYPE)  Serial.print(mySensor.readTempC(), 2);
+
+    if (TEMP_TYPE)  Serial.print(temp, 2);
     else Serial.print(mySensor.readTempF(), 2);
+
   }
 
   Serial.print(F("\n"));
 
 }
+
+
+
+
 
 /**
     @brief : continued loop after fatal error
@@ -652,6 +681,12 @@ void Errorloop(char *mess, uint8_t r)
   Serial.println(F("Program on hold"));
   for (;;) delay(100000);
 }
+
+
+
+
+
+
 
 /**
     @brief : display error message
@@ -687,6 +722,11 @@ void serialTrigger(char * mess)
 }
 
 
+
+
+
+
+
 // ##########################################################################################
 // ##########################################################################################
 void postData()
@@ -702,13 +742,7 @@ void postData()
   row2.addValue("value", humd);
   //  influx.write(row2);
 
-  /*
-       InfluxData row3("DownstairsCO2");
-        row3.addTag("device", "ESP32");
-        row3.addValue("value", CO2);
-        influx.write(row3);
 
-  */
 
   InfluxData row3("PM25");
   row3.addTag("location", "southdarenth");
@@ -727,18 +761,23 @@ void postData()
   // Serial.print("PM10value: ");
   //  Serial.print(PM10value);
 
+
+  InfluxData row5("pressure");
+  row5.addTag("location", "southdarenth");
+  row5.addValue("value", pressure);
+ 
+
   influx.prepare(row);
   influx.prepare(row2);
-
   influx.prepare(row3);
   influx.prepare(row4);
-
+  influx.prepare(row5);
 
   influx.write();
 
   Serial.println("POSTED");
 
-  //  client.stop(); // ?!?!?! fuck knows
+  //  client.stop(); // ?!?!?! who knows seems to work without atm.
 
 
 }
