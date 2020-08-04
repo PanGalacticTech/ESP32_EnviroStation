@@ -31,7 +31,7 @@ sudo systemctl start influxdb
 7.
 Influx
 CREATE DATABASE envirostation
-CREATE USER admin WITH PASSWORD ‘chunky’ WITH ALL PRIVILEGES
+CREATE USER admin WITH PASSWORD ‘passwordy’ WITH ALL PRIVILEGES
 EXIT
 
 
