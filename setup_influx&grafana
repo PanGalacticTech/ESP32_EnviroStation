@@ -1,0 +1,129 @@
+1.
+sudo apt update
+sudo apt upgrade
+
+2.
+wget -qO- https://repos.influxdata.com/influxdb.key | sudo apt-key add –   
+dash may need retyping for some reason
+-qO- is the LETTER O, not the NUMBER 0
+
+on OVH server, this returns an error, to fix
+apt-get install -y gnupg2 gnupg gnupg1
+
+then run first command again.
+
+
+3.
+echo “deb https://repos.influxdata.com/debian buster stable” | sudo tee /etc/apt/sources.list.d/influxdb.list
+quotes may need retyping for some reason -_-
+4. 
+sudo apt update
+
+5.
+sudo apt install influxdb
+
+6.
+sudo systemctl unmask influxdb
+sudo systemctl enable influxdb
+
+sudo systemctl start influxdb
+
+7.
+Influx
+CREATE DATABASE envirostation
+CREATE USER admin WITH PASSWORD ‘chunky’ WITH ALL PRIVILEGES
+EXIT
+
+
+8.
+sudo nano /etc/influxdb/influxdb.conf
+
+add to file under [http]:
+auth-enabled = true
+pprof-enabled = true
+pprof-auth-enabled = true
+ping-auth-enabled = true
+
+save & exit.
+sudo systemctl restart influxdb
+
+9.
+Go to:
+https://grafana.com/grafana/download?platform=arm
+look for the correct version for raspi
+for RASPI 3 & 4 use ARMv7 ! 
+
+CURRENT VERSION AS OF 19/01/2020:
+sudo apt-get install -y adduser libfontconfig1
+wget https://dl.grafana.com/oss/release/grafana_6.5.3_armhf.deb
+sudo dpkg -i grafana_6.5.3_armhf.deb
+
+
+for OVH server:
+First to find details of server hardware:
+run: 
+lscpu
+
+returns:
+Architecture:        x86_64
+CPU op-mode(s):      32-bit, 64-bit
+Byte Order:          Little Endian
+Address sizes:       40 bits physical, 48 bits virtual
+Model name:          Intel Core Processor (Haswell, no TSX)
+Stepping:            1
+CPU MHz:             2095.036
+BogoMIPS:            4190.07
+L2 cache:            4096K
+
+should be installable direct using apt, which will also keep it upgraded.
+
+grafana oss:
+https://packages.grafana.com/oss/deb stable main
+
+
+sudo apt-get install -y apt-transport-https
+sudo apt-get install -y software-properties-common wget
+wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
+
+# Alternatively you can add the beta repository, see in the table above  << says alternitavily but actually just do it I think.
+sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
+
+
+
+sudo apt-get update
+sudo apt-get install grafana
+
+10.
+sudo apt-get update
+sudo apt-get install grafana
+
+
+
+sudo service grafana-server start
+
+
+
+
+11. Configure for start on boot up:
+sudo update-rc.d grafana-server defaults
+systemctl daemon-reload
+systemctl start grafana-server
+systemctl status grafana-server 
+sudo systemctl enable grafana-server.service
+
+12.
+Log into Grafana using user & password admin
+
+
+13.
+Add data source
+
+http://localhost:8086
+
+
+
+Import JSON file for dashboard. Everything should be up and running.
+
+
+Create anon organisation to allow for anonamous use.
+
